@@ -13,7 +13,8 @@ config = {
     'install_requires': ['nose'],
     'packages': ['inclusion_analysis'],
     'scripts': [],
-    'name': 'inclusion_analysis'
+    'name': 'inclusion_analysis',
+    'test_suite': 'tests',
 }
 
 setup(**config)

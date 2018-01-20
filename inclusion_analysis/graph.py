@@ -1,24 +1,161 @@
 class Graph(object):
 
     def __init__(self):
-        self.__vertice = {}
-        self.__index = 0
+        self.__vertices = {}
 
     def connect(self, from_vertex, to_vertex):
         """
-        sets a one-direction relation between vertice. from_vertex -> to_vertex
+        sets a one-direction relation between vertices. from_vertex -> to_vertex
         :param from_vertex:
         :param to_vertex:
         :return: None
         """
-        if not self.__vertice.has_key(from_vertex):
+        if not self.__vertices.has_key(from_vertex):
             self.add_vertex(from_vertex)
-        if not self.__vertice.has_key(to_vertex):
+
+        if not self.__vertices.has_key(to_vertex):
             self.add_vertex(to_vertex)
-        self.__vertice[from_vertex].append(to_vertex)
+
+        self.__vertices[from_vertex].append(to_vertex)
 
     def is_adjacent(self, from_vertex, to_vertex):
-        return to_vertex in self.__vertice[from_vertex]
+        return to_vertex in self.__vertices[from_vertex]
+
+    def get_connected(self, from_vertex):
+        """
+        get all vertices that are connected directly to the particular one
+        :param from_vertex: particular vertex
+        :return: list
+        """
+        if isinstance(from_vertex, int):
+            return self.__vertices[from_vertex]
+
+    def add_vertex(self, index):
+        """
+        add a informational vertex to the graph with
+        :param data: an information contained by vertex
+        :return: None
+        """
+        self.__vertices[index] = []
+
+    def __len__(self):
+        return len(self.__vertices)
+
+    def has_vertex(self, index):
+        """
+        checks if graph contains a vertex with particular information
+        :param name: an info we're looking for
+        :return: Boolean
+        """
+        return self.__vertices.has_key(index)
+
+
+def dfs_impl(graph, cur_vertex, path_marked, marked, cycles):
+    """
+    plain depth first search implementation function.
+    :param vertex: currently processed vertex
+    :param adjacent: adjacency dictionary {to_vertex: from_vertex}
+    :param marked: visited vertices
+    :param cycles: cycles detected
+    :return: boolean
+    """
+    result = False
+
+    for next_vertex in graph.get_connected(cur_vertex):
+        if (path_marked[next_vertex]):  # path detected, the first index in list
+            cycles.append([next_vertex])
+            path_marked[next_vertex] = False
+            result = True
+        if not marked[next_vertex]:
+            path_marked[next_vertex] = True
+            marked[next_vertex] = True
+
+            if dfs_impl(graph, next_vertex, path_marked, marked, cycles):
+                # the function is within cycle right now!
+                cycle = cycles[-1]
+                if cycle[0] != next_vertex:
+                    # append it!
+                    path_marked[next_vertex] = False
+                    cycle.append(next_vertex)
+                    result = True
+                    break
+
+            path_marked[next_vertex] = False
+
+    # for path in cycles:
+    #     path.append(cur_vertex)
+
+    return result
+
+
+def cycle_detect(graph, root_vertex):
+    """
+    cycle detection function
+    :param self:
+    :param root_vertex:
+    :return: a list of pairs that combine a cycle detected and a path to a vertex cycle starts with
+    """
+    print("")
+
+    path_marked = [False] * len(graph)
+    marked = [False] * len(graph)
+    cycles = []
+
+    dfs_impl(graph, root_vertex, path_marked, marked, cycles)
+
+    print("")
+    return cycles
+
+
+class FileGraph(object):
+
+    def __init__(self):
+        self.__graph = Graph()
+        self.__name_to_index = {}
+        self.__index_name = {}
+
+    def get_name_by_index(self, index):
+        return self.__index_name[index]
+
+    def get_index_by_name(self, name):
+        return self.__name_to_index[name]
+
+    def connect(self, from_vertex, to_vertex):
+        """
+        sets a one-direction relation between vertices. from_vertex -> to_vertex
+        :param from_vertex:
+        :param to_vertex:
+        :return: None
+        """
+        if isinstance(from_vertex, str):
+            if not self.__name_to_index.has_key(from_vertex):
+                self.add_vertex(from_vertex)
+            from_vertex_index = self.__name_to_index[from_vertex]
+        else:
+            raise ValueError("vertices must be names of files")
+
+        if isinstance(to_vertex, str):
+            if not self.__name_to_index.has_key(to_vertex):
+                self.add_vertex(to_vertex)
+            to_vertex_index = self.__name_to_index[to_vertex]
+        else:
+            raise ValueError("vertices must be names of files")
+
+        self.__graph.connect(from_vertex_index, to_vertex_index)
+
+    def is_adjacent(self, from_vertex, to_vertex):
+        from_vertex = self.get_index_by_name(from_vertex)
+        to_vertex = self.get_index_by_name(to_vertex)
+        return self.__graph.is_adjacent(from_vertex, to_vertex)
+
+    def get_connected(self, from_vertex):
+        """
+        get all vertices that are connected directly to the particular one
+        :param from_vertex: particular vertex
+        :return: list
+        """
+        if isinstance(from_vertex, int):
+            return self.__vertices[from_vertex]
 
     def add_vertex(self, data):
         """
@@ -26,11 +163,12 @@ class Graph(object):
         :param data: an information contained by vertex
         :return: None
         """
-        self.__vertice[data] = []
-        self.__index += 1
+        self.__name_to_index[data] = len(self)
+        self.__index_name[len(self)] = data
+        self.__graph.add_vertex(len(self))
 
     def __len__(self):
-        return self.__index
+        return len(self.__graph)
 
     def has_vertex(self, name):
         """
@@ -38,46 +176,7 @@ class Graph(object):
         :param name: an info we're looking for
         :return: Boolean
         """
-        return self.__vertice.has_key(name)
-
-    def __topology_sort(self, vertex_index, postorder, marked):
-        """
-        return an ordered vertice. Implementation function
-        Caution: before using it, check for cycles in graph.
-        :param vertex_index: vertex to start with
-        :param postorder: formed order list
-        :param marked: vertice already visited
-        :return: None
-        """
-        if not marked[vertex_index]:
-            marked[vertex_index] = True
-            for child_index in self.__vertice[vertex_index].connected():
-                    self.__topology_sort(child_index, postorder, marked)
-            postorder.append(vertex_index)
-
-    def __dfs(self, vertex, adjacent, marked, cycles):
-        """
-        plain depth first search implementation function.
-        :param vertex: currently processed vertex
-        :param adjacent: adjacency dictionary {to_vertex: from_vertex}
-        :param marked: visited vertice
-        :param cycles: cycles detected
-        :return: None
-        """
-        marked[vertex] = True
-        for child in self.__vertice[vertex]:
-            if not marked[child]:
-                marked[child] = True
-                adjacent[child] = vertex
-                self.__dfs(child, adjacent, marked, cycles)
-            else:
-                cycle = []
-                current_adjacent = vertex
-                while child != current_adjacent:
-                    cycle.append(current_adjacent)
-                    current_adjacent = adjacent[current_adjacent]
-                cycle.append(child)
-                cycles.append(cycle)
+        return self.__vertices.has_key(name)
 
     def cycle_detect(self, root_vertex):
         """
@@ -86,101 +185,10 @@ class Graph(object):
         :param root_vertex:
         :return: a list of pairs that combine a cycle detected and a path to a vertex cycle starts with
         """
-        marked = {k: False for k in self.__vertice.keys()}
-        cycles = []
-        adjacent = {k: None for k in self.__vertice.keys()}
-        cycles = []
-        active_vetice = []
+        root_vertex = self.get_index_by_name(root_vertex)
+        cycles = cycle_detect(self.__graph, root_vertex)
+        named_cycles = []
+        for cycle in cycles:
+            named_cycles.append([self.get_name_by_index(index) for index in cycle])
 
-        def prior(vertex, adjacent, *unused):
-            if vertex in active_vetice:
-                cycle = []
-                current_adjacent = adjacent[vertex]
-                while vertex != current_adjacent:
-                    cycle.append(current_adjacent)
-                    current_adjacent = adjacent[current_adjacent]
-                cycle.append(vertex)
-                cycles.append(cycle)
-            else:
-                active_vetice.append(vertex)
-
-        def post(vertex, *unused):
-            try:
-                i = active_vetice.index(vertex)
-                del active_vetice[i]
-            except ValueError:  # if a cycle detected, one vertex is visited twice
-                pass
-
-        self.__dfs_modifiable(root_vertex, adjacent, marked, prior, post)
-
-        passes_to_cycles = []
-        cycles_start_vertice = [cycle[-1] for cycle in cycles]
-
-        for start_vertice in cycles_start_vertice:
-            path = []
-            while start_vertice != root_vertex:
-                path.append(start_vertice)
-                start_vertice = adjacent[start_vertice]
-            path.append(start_vertice)
-            path.reverse()
-            passes_to_cycles.append(path)
-
-        return zip(cycles, passes_to_cycles)
-
-    def __dfs_modifiable(self, vertex, adjacent, marked, prefix_operation=None, postfix_operation=None):
-        """
-        Depth first search implementation function. with user-defined pre/post processing function
-        :param vertex: currently processed vertex
-        :param adjacent: adjacency dictionary {to_vertex: from_vertex}
-        :param marked: visited vertice
-        :param prefix_operation: a function called before processing a vertex
-        :param postfix_operation: a function called after processing a vertex
-        :return: None
-        """
-        if prefix_operation is not None:
-            prefix_operation(vertex, adjacent, marked)
-        if not marked[vertex]:
-            marked[vertex] = True
-            for child in self.__vertice[vertex]:
-                adjacent[child] = vertex
-                self.__dfs_modifiable(child, adjacent, marked, prefix_operation, postfix_operation)
-                adjacent[child] = vertex  # to prevent cycling when looking for a path. It sets a path from current vertex to root
-        if postfix_operation is not None:
-            postfix_operation(vertex, adjacent, marked)
-
-    def topology_sort(self, root_vertex):
-        """
-        return an ordered vertice
-        :param self:
-        :param root_vertex: a vertex to start
-        :return: ordered vertive
-        """
-        postorder = []
-        marked = [False for _ in range(0, len(self))]
-        for i in range(0, len(self)):
-            self.__topology_sort(i, postorder, marked)
-        postorder.reverse()
-        return postorder
-
-    def reversed(self):
-        new_graph = Graph()
-        for from_vertex, adjacent in self.__vertice.items():
-            [new_graph.connect(to_vertex, from_vertex) for to_vertex in adjacent]
-        return new_graph
-
-"""
-    def strong_connection(self):
-        marked = [False for _ in range(0, len(self))]
-        self.__reverse()
-
-        reverse_postorder = self.topology_sort()
-
-        marked = [False for _ in range(0, len(self))]
-        self.__reverse()
-        groups = []
-        for i in reverse_postorder:
-            postorder = []
-            self.__topology_sort(i, postorder, marked)
-            groups.append(postorder)
-        return groups
-"""
+        return named_cycles
