@@ -49,7 +49,6 @@ class GraphTest(unittest.TestCase):
         cycles = cycle_detect(target, 0)
         expected = [3, 2, 7]
 
-        print(cycles)
         self.assertEqual(len(cycles), 1)
         assertSameList(cycles[0], expected)
 

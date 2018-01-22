@@ -158,14 +158,23 @@ def obtain_header(line_lexems):
         return include_words[-2]
 
 
-def find_included_headers(filename):
+def find_full_header_name(filename, include_directories):
+    for path in include_directories:
+        full_path = os.path.join(path, filename)
+        if os.path.exists(full_path):
+            return full_path
+    else:
+        raise ValueError("no header file was detected: " + filename + ", with include dirs: " + ', '.join(include_directories))
+
+def find_included_headers(filename, include_directories):
     """
     parse a file and return included header names
     :param filename: a file to parse
     :return: a list of included files
     """
+    full_filename = find_full_header_name(filename, include_directories)
     result = []
-    with open(filename, 'r') as f:
+    with open(full_filename, 'r') as f:
         for line in f:
             try:
                 lexems = _get_lexems(line)
@@ -175,6 +184,7 @@ def find_included_headers(filename):
             except ValueError:
                 pass
     return result
+
 
 
 def find_project_headers(project_root, header_ext=['h', 'hpp']):

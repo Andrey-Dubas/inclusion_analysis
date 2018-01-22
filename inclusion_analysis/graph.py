@@ -95,15 +95,12 @@ def cycle_detect(graph, root_vertex):
     :param root_vertex:
     :return: a list of pairs that combine a cycle detected and a path to a vertex cycle starts with
     """
-    print("")
-
     path_marked = [False] * len(graph)
     marked = [False] * len(graph)
     cycles = []
 
     dfs_impl(graph, root_vertex, path_marked, marked, cycles)
 
-    print("")
     return cycles
 
 
@@ -192,3 +189,12 @@ class FileGraph(object):
             named_cycles.append([self.get_name_by_index(index) for index in cycle])
 
         return named_cycles
+
+    def __str__(self):
+        result = ''
+        for index, filename in self.__index_name.iteritems():
+            result += filename + ': '
+            for include in self.__graph.get_connected(index):
+                result += self.get_name_by_index(include) + ', '
+            result += "\n"
+        return result
