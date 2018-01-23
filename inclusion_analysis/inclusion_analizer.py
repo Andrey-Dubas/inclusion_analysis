@@ -62,14 +62,12 @@ def main():
         else:
             root_file = root_files[0]
             header_inclusion_graph = graph_completion_recursive(include_directories, root_file)
-            print(header_inclusion_graph)
             cycles = header_inclusion_graph.cycle_detect(root_file)
             result = []
 
-            for cycle in cycles:
-                path = []
-                result.append("path: " + ' -> '.join(path) +
-                            "\ncycle: " + ' -> '.join(cycle))
+            for cycle, path in cycles:
+                result.append("path: \n  -> " + '\n  -> '.join(path) +
+                            "\ncycle:\n  -> " + '\n  -> '.join(cycle))
             print('\n'.join(result))
 
 if __name__ == '__main__':
